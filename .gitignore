@@ -1,0 +1,5 @@
+
+.env
+storageSinta.py
+STORAGE/backup.py
+STORAGE/canvas.py
