@@ -20,28 +20,31 @@ response = session.post(login_url, data=payload)
 #################Login#######################
 requestItera = 0
 if response.status_code == 200:
+    tahun = datetime.datetime.today().year
+    tahun5 = list(range(tahun, tahun -5, -1))
     def remover(public):
         cleaned_string = unicodedata.normalize('NFKD', public)
         cleaned_string = re.sub("\(.*?\)","()", cleaned_string)
+        try:
+            cleaned_string = cleaned_string.split(':')[1]
+        except IndexError:
+            cleaned_string = cleaned_string.split(':')[0]
         cleaned_string = re.sub(r'[0-9!@#$%^*(),.?":{}|<>-]', '', cleaned_string)
         cleaned_string = cleaned_string.replace('Vol', '').strip()
         cleaned_string = re.sub(r'\\.*', '', cleaned_string)
         return cleaned_string
     
     def webURL(addUrl=""):
-        # global requestItera
-        web = "https://sinta.kemdikbud.go.id/"+addUrl
+        web = f'https://sinta.kemdikbud.go.id/{addUrl}'
         response = session.get(web)
         response_text = response.text
         soup = BeautifulSoup(response_text, 'html.parser')
-        # requestItera += 1
-        # print(requestItera)
         return soup
 
     #List meta profile
     def metaProfile(sintaID):
         list_dosen = []
-        soup = webURL('authors/profile/'+sintaID)
+        soup = webURL(f'authors/profile/{sintaID}')
         name = soup.find('h3').find('a').text
         profile =  soup.find('div',{'class':'meta-profile'})
         profile = profile.text.split('\n')
@@ -59,7 +62,7 @@ if response.status_code == 200:
     #List meta SINTA score
     def metaScore(sintaID):
         list_score = []
-        soup = webURL('authors/profile/'+sintaID)
+        soup = webURL(f'authors/profile/{sintaID}')
         for data in soup.find_all('div',{'class':'col-4'}):
             pr_num = data.find('div', {'class': 'pr-num'}).text
             pr_txt = data.find('div', {'class': 'pr-txt'}).text
@@ -70,8 +73,8 @@ if response.status_code == 200:
     def metaIndex(sintaID):
         list_sum = []
         itera = 0
-        soup = webURL('authors/profile/'+sintaID)
-        for data in soup.find_all('tr'): #Parsing data tbody
+        soup = webURL(f'authors/profile/{sintaID}')
+        for data in soup.find_all('tr'):
             list_temp = []
             if itera != 0:
                 for i in data:
@@ -95,13 +98,11 @@ if response.status_code == 200:
         sumTahunn3 = 0
         sumTahunn4 = 0
         sumTahunn5 = 0
-        soup = webURL('authors/profile/'+sintaID)
-        tahun = datetime.datetime.today().year
-        tahun5 = list(range(tahun, tahun -5, -1))
+        soup = webURL(f'authors/profile/{sintaID}')
         try:
             pageMax = soup.find('div',{'class':'pagination-text'}).text.split()[3]
             for page in range(1,int(pageMax)+1):
-                website_url = 'authors/profile/'+sintaID+'?page='+str(page)+'&view=scopus'
+                website_url = f'authors/profile/{sintaID}?page={str(page)}&view=scopus'
                 soupPage = webURL(website_url)
                 for data in soupPage.find_all('div',{'class':'ar-list-item'}):
                     dataTahun = data.find('a',{'class':'ar-year'}).text
@@ -150,7 +151,7 @@ if response.status_code == 200:
     
     #Data meta artikel scholar
     def metaScholar(sintaID):
-        soup = webURL('authors/profile/'+sintaID+'/?view=googlescholar')
+        soup = webURL(f'authors/profile/{sintaID}/?view=googlescholar')
         list_artikel5 = []
         list_judulIndikator = []
         sumTahun1 = 0
@@ -158,12 +159,10 @@ if response.status_code == 200:
         sumTahun3 = 0
         sumTahun4 = 0
         sumTahun5 = 0
-        tahun = datetime.datetime.today().year
-        tahun5 = list(range(tahun, tahun -5, -1))
         try:
             pageMax = soup.find('div',{'class':'pagination-text'}).text.split()[3]
             for page in range(1,int(pageMax)+1):
-                    website_url = 'authors/profile/'+sintaID+'?page='+str(page)+'&view=googlescholar'
+                    website_url = f'authors/profile/{sintaID}?page={str(page)}&view=googlescholar'
                     soupPage = webURL(website_url)
                     dataPage = soupPage.find_all('div',{'class':'ar-list-item'})
                     for indexing,data in enumerate(dataPage):
@@ -207,14 +206,12 @@ if response.status_code == 200:
 
     #Data meta research
     def metaResearch(sintaID):
-        soup = webURL('authors/profile/'+sintaID+'/?view=researches')
+        soup = webURL(f'authors/profile/{sintaID}/?view=researches')
         list_researches = []
-        tahun = datetime.datetime.today().year
-        tahun5 = list(range(tahun, tahun -5, -1))
         try:
             pageMax =  soup.find('div',{'class':'pagination-text'}).text.split()[3]
             for page in range(1,int(pageMax)+1):
-                website_url = 'authors/profile/'+sintaID+'/?page='+str(page)+'&view=researches'
+                website_url = f'authors/profile/{sintaID}/?page={str(page)}&view=researches'
                 soupPage = webURL(website_url)
                 for data in soupPage.find_all('div',{'class':'ar-list-item'}):
                     dataTahun = data.find('a',{'class':'ar-year'}).text
@@ -242,14 +239,12 @@ if response.status_code == 200:
     
     #Data meta services
     def metaServices(sintaID):
-        soup = webURL('authors/profile/'+sintaID+'/?view=services')
+        soup = webURL(f'authors/profile/{sintaID}/?view=services')
         list_services = []
-        tahun = datetime.datetime.today().year
-        tahun5 = list(range(tahun, tahun -5, -1))
         try:
             pageMax =  soup.find('div',{'class':'pagination-text'}).text.split()[3]
             for page in range(1,int(pageMax)+1):
-                website_url = 'authors/profile/'+sintaID+'/?page='+str(page)+'&view=services'
+                website_url = f'authors/profile/{sintaID}/?page={str(page)}&view=services'
                 soupPage = webURL(website_url)
                 for data in soupPage.find_all('div',{'class':'ar-list-item'}):
                     dataTahun = data.find('a',{'class':'ar-year'}).text
@@ -273,10 +268,8 @@ if response.status_code == 200:
     
     #Data meta iprs
     def metaIprs(sintaID):
-        soup = webURL('authors/profile/'+sintaID+'/?view=iprs')
+        soup = webURL(f'authors/profile/{sintaID}/?view=iprs')
         list_iprs = []
-        tahun = datetime.datetime.today().year
-        tahun5 = list(range(tahun, tahun -5, -1))
         try:
             pageMax =  soup.find('div',{'class':'pagination-text'}).text.split()[3]
             for page in range(1,int(pageMax)+1):
@@ -297,10 +290,8 @@ if response.status_code == 200:
 
     #Data meta books
     def metaBooks(sintaID):
-        soup = webURL('authors/profile/'+sintaID+'/?view=books')
+        soup = webURL(f'authors/profile/{sintaID}/?view=books')
         list_books = []
-        tahun = datetime.datetime.today().year
-        tahun5 = list(range(tahun, tahun -5, -1))
         try:
             pageMax =  soup.find('div',{'class':'pagination-text'}).text.split()[3]
             for page in range(1,int(pageMax)+1):
@@ -320,8 +311,36 @@ if response.status_code == 200:
             pass
         return list_books
     
+    #Sitasi meta scholar
+    def metaSitasi(sintaID):
+        soup = webURL(f'authors/profile/{sintaID}/?view=googlescholar').findAll('script')
+        patternCit = r'series:\s*\[.*?name:\s*\'Citations\'.*?data:\s*\[(.*?)\]'
+        patternYear = r'xAxis:\s*\[.*?type:\s*\'category\'.*?data:\s*\[(.*?)\]'
+        try:
+            matchingCit = re.findall(patternCit, str(soup[20]), re.DOTALL)[0]
+            matchingYear = re.findall(patternYear, str(soup[20]), re.DOTALL)[0]
+            hasil = True
+        except IndexError:
+            hasil = False
+        
+        if hasil:
+            sitasi_list = [int(citation.strip()) for citation in matchingCit.split(',') if citation.strip()]
+            years_list = [int(year.strip().replace("'", "")) for year in matchingYear.split(',') if year.strip()]
+            sitasi = []
+            for year in tahun5:
+                if year in years_list:
+                    idx = years_list.index(year)
+                    sitasi.append(sitasi_list[idx])
+                else:
+                    sitasi.append(0)
+        else:
+            sitasi = ['Tidak ada data sitasi pada website SINTA']
+
+        return sitasi, hasil
+    
+    #Cek akreditasi SINTA
     def cekAkreditasi(dataQuart):
-        time.sleep(0.7)
+        time.sleep(0.5)
         soup = webURL('journals/index/?q='+dataQuart)
         try:
             quartil = soup.find('span',{'class':'num-stat accredited'}).text

@@ -1,21 +1,24 @@
 import pandas as pd
 import numpy as np
 import gspread, os, time, traceback
+from colorama import init, Fore, Back, Style
 from datetime import datetime as dt
 import storageSinta as st
 from fungsiScrape import *
 from dataclasses import dataclass, field
 from typing import List
 os.system('cls')
+
 #Koneksi & Up Gsheet
 gc = gspread.oauth()
 sh = gc.open("SINTA Sheet")
 worksheet = sh.worksheet('DosenSV')
 worksheet2 = sh.worksheet('IndikatorKerja')
 worksheet3 = sh.worksheet('Lampiran_IndikatorKerja')
+worksheet4 = sh.worksheet('Sitasi')
 
-sintaRange = st.sintaRange()
-
+sintaRange = st.sintaTest()
+init(autoreset=True)
 @dataclass
 class dcProfile:
     name : str
@@ -55,10 +58,14 @@ loadingNum = 1
 loadUntil = len(sintaRange)
 errorCount = 0
 errorLog = []
-#Sheet DosenSV
 nomorIndikatorKerja = 0
+nomorLampiran = 0
+nomorSitasi = 0
+isnoHeader = True
 bigDatasetIndikatorKerja = []
 bigDatasetLampiran = []
+bigDatasetSitasi = []
+mulaiProgram = time.time()
 for sintaID in sintaRange:
     startTime = time.time()
     sintaID = str(sintaID)
@@ -75,9 +82,10 @@ for sintaID in sintaRange:
         metaServicess = metaServices(sintaID)
         metaIprss = metaIprs(sintaID)
         metaBookss = metaBooks(sintaID)
+        metaSitasis = metaSitasi(sintaID)
     except:
-        print('|_________________> Error pada proses Dosen: {}'.format(profile.name))
-        print('                  \______> Sinta Id: {}'.format(profile.ID))
+        print(f'{Style.NORMAL+Back.BLACK+Fore.CYAN}|_________________> Error pada proses Dosen: {profile.name}')
+        print(f'{Style.NORMAL+Back.BLACK+Fore.CYAN}                  \______> Sinta Id: {profile.ID}')
         errorCount += 1
         errorLog.append([loadingNum,profile.ID])
         traceback.print_exc()
@@ -151,7 +159,7 @@ for sintaID in sintaRange:
 
     shIndex = iterIndex()
     shProfile = [profile.prodi,profile.name,profile.ID,]
-    shProfile1 = ['',profile.name,profile.prodi]
+    shProfile1 = [profile.name,profile.prodi]
     shScore = [score.sintaAll,score.sinta3yr,score.affilAll,score.affil3yr]
     shHeader = [['Profile','','',
                 'Scopus Index','','','','','',
@@ -201,12 +209,34 @@ for sintaID in sintaRange:
                                         'Quartil',
                                         ]]
     
+    shHeaderSitasi = [['No',
+                      'Nama Dosen',
+                      'Prodi',
+                      'Sitasi', '','','','',
+                      'Jumlah'],
+                      ['','','',
+                       str(datTahun[0]),str(datTahun[1]),str(datTahun[2]),str(datTahun[3]),str(datTahun[4])]]
+    
+    if isnoHeader:
+        bigDataset.extend(shHeader)
+        bigDatasetIndikatorKerja.extend(shHeaderIndikatorKerja)
+        bigDatasetLampiran.extend(shHeaderLampiranIndikatorKerja)
+        bigDatasetSitasi.extend(shHeaderSitasi)
+        isnoHeader = False
+    
+    nomorSitasi += 1
+    if metaSitasis[1]:
+        bigDatasetSitasi.extend([[nomorSitasi]+shProfile1+metaSitasis[0]+[sum(metaSitasis[0])]])
+    else: bigDatasetSitasi.extend([[nomorSitasi]+shProfile1+metaSitasis[0]])
+
     shIndikatorKerja = metaScopuss[1]+metaScholars[1]
     for i in metaScopuss[2]:
-        tempLampiran = [shProfile1+i]
+        nomorLampiran += 1
+        tempLampiran = [[nomorLampiran]+shProfile1+i]
         bigDatasetLampiran.extend(tempLampiran)
     for i in metaScholars[2]:
-        tempLampiran = [shProfile1+i]
+        nomorLampiran += 1
+        tempLampiran = [[nomorLampiran]+shProfile1+i]
         bigDatasetLampiran.extend(tempLampiran)
     try:
         dataFix = [shProfile+shIndex+shScore+listDataset[0]]+listDataset[1:]
@@ -214,32 +244,34 @@ for sintaID in sintaRange:
         dataFix = [shProfile+shIndex+shScore+listDataset]
 
     bigDataset.extend(dataFix)
-    datasetFixIndikatorKerja = [shProfile1+shIndikatorKerja]
+    datasetFixIndikatorKerja = [[nomorIndikatorKerja]+shProfile1+shIndikatorKerja]
     bigDatasetIndikatorKerja.extend(datasetFixIndikatorKerja)
     elapsed = time.time() - startTime
     formatTime = dt.strftime(dt.utcfromtimestamp(elapsed),'%H:%M:%S')
-    print(f'|_________________> Selesai dalam {formatTime}! ')
+    print(f'{Style.NORMAL+Back.BLACK+Fore.GREEN}|_________________> Selesai dalam {formatTime}! ')
     loadingNum += 1
 
 subbigDataset = [sublist for sublist in bigDataset]
 worksheet.clear()
 worksheet2.clear()
 worksheet3.clear()
+worksheet4.clear()
 
 #Worksheet DosenSV
-worksheet.update('A1',shHeader)
-worksheet.update('A1',shHeader)
-worksheet.update('A3',subbigDataset)
+worksheet.update('A1',subbigDataset)
 
 #Worksheet IndikatorKerja
-worksheet2.update('A1',shHeaderIndikatorKerja)
-worksheet2.update('A3',bigDatasetIndikatorKerja)
+worksheet2.update('A1',bigDatasetIndikatorKerja)
 
 #Worksheet Lampiran_IndikatorKerja
-worksheet3.update('A1',shHeaderLampiranIndikatorKerja)
-worksheet3.update('A2',bigDatasetLampiran)
+worksheet3.update('A1',bigDatasetLampiran)
+
+#Worksheet Sitasi
+worksheet4.update('A1',bigDatasetSitasi)
+selesaiProgram = time.time() - mulaiProgram
+waktuProgram = dt.strftime(dt.utcfromtimestamp(selesaiProgram),'%H:%M:%S')
 if errorCount == 0:
-    print('Selesai! Tidak ada error.')
+    print(f'Selesai dalam {waktuProgram}! Tidak ada error.')
 else:
     print('Selesai! Total Error: {}'.format(errorCount))
     print('Error Log: {}'.format(errorLog))
